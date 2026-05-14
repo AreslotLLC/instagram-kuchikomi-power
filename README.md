@@ -21,10 +21,13 @@ scripts/
   discord_notifier.py        # Discord Webhook 通知
 ```
 
+本リポジトリは時刻表記をすべて **日本時間(JST, UTC+09:00)** で統一しています。
+Airtable に書き込む `qa_checked_at` / `slide_qa_checked_at` も `Asia/Tokyo` フィールドとして JST で記録されます。
+
 ## フロー全体図
 
 ```
-[Cloud Routine: 毎日 02:00 UTC (= JST 11:00)]
+[Cloud Routine: 毎日 11:00 (日本時間)]
    ↓ .claude/routines/qa-batch.md の Prompt セクションが流れる
 [Claude Code セッション(MAX枠) = オーケストレーター本体]
    ├─ Bash: python -m scripts.fetch_pending --limit 40
@@ -105,7 +108,9 @@ claude.ai/code でセッションを開き、Environment に `instagram-kuchikom
 /schedule
 ```
 
-- **Trigger**: `Cron` → `0 2 * * *`(JST 11:00)
+- **Schedule timezone**: `Asia/Tokyo` を選択(これで以下の cron 式が JST 解釈になる)
+- **Trigger**: `Cron` → `0 11 * * *` (= 日本時間 11:00)
+  - timezone 設定が UTC しか選べない場合は `0 2 * * *` に置き換える
 - **Prompt**: `.claude/routines/qa-batch.md` の `## Prompt` セクション以下をそのまま貼り付け
 - 保存
 

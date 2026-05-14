@@ -3,7 +3,8 @@
 このファイルは Cloud Routine の起動プロンプトとして使うテンプレートです。
 `/schedule` で Routine 登録するときに、本ファイルの「## Prompt」セクション以下をそのまま貼り付けてください。
 
-- 推奨スケジュール: 毎日 02:00 UTC(= JST 11:00)
+- 推奨スケジュール: **毎日 11:00 (日本時間)**
+- Routine の Schedule timezone は `Asia/Tokyo` を選択する(UTC のままなら `0 2 * * *`)
 - 使う認証: ご自身の MAX プラン(=この Routine を登録したアカウント)
 - 必要な環境変数: `.env.example` を参照(`AIRTABLE_PAT` / `DISCORD_WEBHOOK_URL` 等)
 - Allowed domains: `api.airtable.com` / `*.supabase.co` / `discord.com`
