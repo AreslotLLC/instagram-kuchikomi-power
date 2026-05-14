@@ -66,58 +66,116 @@ python -m scripts.fetch_pending --limit 1 --output /tmp/qa_pending.json --image-
 python -m scripts.apply_qa --input /tmp/qa_results.json
 ```
 
-## Cloud Routines への登録手順
+## Cloud Routines への登録手順 (UI操作 5分)
 
-### 1. 専用 Environment を作る
+Cloud Routines にはまだ public な CLI/API がなく、登録は claude.ai/code の UI 操作のみで可能です。
+以下のチェックリストを上から順に UI で実施してください。
 
-claude.ai/code 上で:
+### Step 1. Environment を作る
 
-- **Environments** → **New environment** → 名前: `instagram-kuchikomi-qa`
-- このリポジトリ(`AreslotLLC/instagram-kuchikomi-power`)と紐付け
-- **Network access** → `Custom`
-- **Allowed domains** に以下を追加(1行ずつ):
+claude.ai/code →  **Environments** → **New environment**
 
-  ```
-  api.airtable.com
-  *.supabase.co
-  discord.com
-  ```
+| 項目 | 設定値 |
+|---|---|
+| Name | `instagram-kuchikomi-qa` |
+| Repository | `AreslotLLC/instagram-kuchikomi-power` |
+| Branch | `claude/analyze-automation-flow-hpP1y` (動作確認後 main にマージ) |
+| Setup script | `bash bin/setup.sh` |
+| Network access | `Custom` |
 
-### 2. Environment Variables を登録
+**Allowed domains** に1行ずつ:
+```
+api.airtable.com
+*.supabase.co
+discord.com
+```
 
-同じ環境設定画面の **Environment Variables** に以下を追加:
+### Step 2. Environment Variables を登録
+
+同じ画面の **Environment Variables**:
 
 | 変数 | 値 |
 |---|---|
-| `AIRTABLE_PAT` | Airtable Personal Access Token |
+| `AIRTABLE_PAT` | (Airtable PAT — 対象ベースの read+write スコープのみ) |
 | `AIRTABLE_BASE_ID` | `appkaalWhOFGQ7qYX` |
 | `AIRTABLE_TABLE_IDEAS` | `tbl7k3PRdVHPFCUYR` |
 | `AIRTABLE_TABLE_SLIDES` | `tbltCQz4IfEydvXmR` |
-| `DISCORD_WEBHOOK_URL` | Discord Webhook URL |
+| `DISCORD_WEBHOOK_URL` | (お渡しいただいた Discord Webhook URL) |
 | `QA_PASS_THRESHOLD` | `80` |
 | `QA_MAX_ATTEMPTS` | `3` |
 | `QA_TARGET_STATUS` | `投稿待ち` |
 
-**注**: 環境変数はこの Environment にアクセス権がある人に**平文で見えます**。Airtable PAT は対象ベースだけにスコープを絞り、定期ローテーションを推奨。
+> 環境変数はこの Environment にアクセス権がある人に平文で見えます。PAT は最小スコープで発行・定期ローテーション推奨。
 
-### 3. Routine を作る
+### Step 3. Routine を登録(`/schedule`)
 
-claude.ai/code でセッションを開き、Environment に `instagram-kuchikomi-qa` を選択した状態で:
+`instagram-kuchikomi-qa` Environment を選択した状態で新しいセッションを開き、`/schedule` を実行:
+
+| 項目 | 設定値 |
+|---|---|
+| Schedule timezone | `Asia/Tokyo` |
+| Trigger | Cron → `0 11 * * *` (= 日本時間 11:00) |
+| Prompt | 下記「Routine プロンプト(コピペ用)」をそのまま貼り付け |
+
+> Schedule timezone に UTC しか選べない場合は cron 式を `0 2 * * *` に置き換えてください。
+
+### Step 4. Run now で初回手動実行
+
+Routines 管理画面で **Run now**。Discord に通知が並び、Airtable の `qa_status` が `PASS` / `FAIL` / `要承認` に更新されていれば成功です。
+
+---
+
+## Routine プロンプト(コピペ用)
+
+`/schedule` の **Prompt** 欄に以下をそのまま貼ってください。
+(原本は `.claude/routines/qa-batch.md` の `## Prompt` セクション。コピペ用にここにも展開しています)
 
 ```
-/schedule
+あなたはこのリポジトリの「Instagram カルーセル QA 品質ゲート」のオーケストレーターです。
+Python は I/O 専用、判定は `instagram-image-qa` サブエージェントに完全委譲します。
+途中で迷ったら勝手に判断せず、`qa_status='要承認'` に倒して人間の判断に回してください。
+
+### 手順
+
+1. 投稿待ち画像を取得
+   - `python -m scripts.fetch_pending --limit 40 --output /tmp/qa_pending.json --image-dir /tmp/qa_images` を Bash で実行
+   - 失敗したら理由を報告して STOP(再試行しない)
+   - `/tmp/qa_pending.json` を Read で読み込み、`ideas` 配列の件数を報告
+   - 0件ならステップ5に飛んで「対象 0 件」とだけ報告して終了
+
+2. 各 idea を順番に判定(`ideas` 配列をループ)
+   - 各要素について、Task ツールで `instagram-image-qa` サブエージェントを spawn
+   - サブエージェントへの prompt: 「次の idea を検査してください。判定後は <<<QA_JSON>>>...<<<END>>> のセンチネル付き JSON のみを返してください。」のあとに idea 本体の JSON を貼り付け
+   - サブエージェントが返した最終応答テキストから <<<QA_JSON>>> と <<<END>>> の間を抽出して `results` 配列に push
+   - サブエージェントから JSON が取れない場合は次を push:
+     {"idea_id":"<id>","title":"<title>","qa_status":"要承認","qa_score":0,"qa_findings":"サブエージェント出力をパースできず","qa_attempt_no_prev":<n>,"slides":[]}
+
+3. 結果を集約して書き出し
+   - 集めた `results` を {"results": [...]} の形にし、Write で `/tmp/qa_results.json` に保存
+   - 件数と PASS/FAIL/要承認 の内訳をログに出す
+
+4. Airtable に反映 + Discord 通知
+   - `python -m scripts.apply_qa --input /tmp/qa_results.json` を Bash で実行
+   - 標準エラー出力の最後にある `[apply][done]` 行をそのまま転記
+
+5. 最終サマリーを報告
+   - 「対象 N 件 / PASS x / FAIL y / 要承認 z / エラー e」の1行
+   - FAIL や 要承認 がある idea のうち代表3件のタイトルを併記
+
+### 重要原則
+
+- 画像のダウンロードは `fetch_pending.py` に任せる(自分で curl しない)
+- Airtable の書き込みは `apply_qa.py` に任せる(自分で API を叩かない)
+- サブエージェントの出力JSONはそのまま信用する。スコアの再計算や書き換えはしない
+- サブエージェントを呼ぶときに `local_image_path` フィールドを必ず含める
+- 1件失敗しても他の件を続ける(早期 return しない)
+
+### 禁則
+
+- secret(AIRTABLE_PAT / DISCORD_WEBHOOK_URL 等)の値をログ・所見・Discord・Airtable に出さない
+- 再生成プロンプトを書かない(品質判定のみ)
+- 投稿シナリオ(Make 5407258)に手を出さない
 ```
-
-- **Schedule timezone**: `Asia/Tokyo` を選択(これで以下の cron 式が JST 解釈になる)
-- **Trigger**: `Cron` → `0 11 * * *` (= 日本時間 11:00)
-  - timezone 設定が UTC しか選べない場合は `0 2 * * *` に置き換える
-- **Prompt**: `.claude/routines/qa-batch.md` の `## Prompt` セクション以下をそのまま貼り付け
-- 保存
-
-### 4. 初回手動実行
-
-Routines の管理画面から **Run now** を押して動作確認。
-Discord に embed が並び、Airtable の `qa_status` が更新されていれば成功。
 
 ## QA 判定ロジック
 

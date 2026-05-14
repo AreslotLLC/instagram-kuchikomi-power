@@ -19,14 +19,13 @@ Python は I/O 専用、判定は `instagram-image-qa` サブエージェント�
 
 ### 手順
 
-1. 依存をセットアップ
-   - `pip install -q -r requirements.txt` を Bash で実行(失敗したら STOP して理由を報告)
-
-2. 投稿待ち画像を取得
+1. 投稿待ち画像を取得
    - `python -m scripts.fetch_pending --limit 40 --output /tmp/qa_pending.json --image-dir /tmp/qa_images` を実行
+   - 失敗したら理由を報告して STOP(再試行しない)
    - `/tmp/qa_pending.json` を Read で読み込み、`ideas` 配列の件数を報告
+   - 0件ならステップ5に飛んで「対象 0 件」とだけ報告して終了
 
-3. 各 idea を順番に判定(`ideas` 配列をループ)
+2. 各 idea を順番に判定(`ideas` 配列をループ)
    - 各要素について、**Task ツール**で `instagram-image-qa` サブエージェントを spawn
      - サブエージェントへの prompt: 「次の idea を検査してください。判定後は `<<<QA_JSON>>>...<<<END>>>` のセンチネル付き JSON のみを返してください。」のあとに idea 本体の JSON を貼り付け
    - サブエージェントが返した最終応答テキストから `<<<QA_JSON>>>` と `<<<END>>>` の間を抽出して `results` 配列に push
@@ -36,15 +35,15 @@ Python は I/O 専用、判定は `instagram-image-qa` サブエージェント�
       "qa_score":0,"qa_findings":"サブエージェント出力をパースできず","qa_attempt_no_prev":<n>,"slides":[]}
      ```
 
-4. 結果を集約して書き出し
+3. 結果を集約して書き出し
    - 集めた `results` を `{"results": [...]}` の形にし、Write で `/tmp/qa_results.json` に保存
    - 件数と PASS/FAIL/要承認 の内訳をログに出す
 
-5. Airtable に反映 + Discord 通知
+4. Airtable に反映 + Discord 通知
    - `python -m scripts.apply_qa --input /tmp/qa_results.json` を Bash で実行
    - 標準エラー出力の最後にある `[apply][done]` 行をそのまま転記
 
-6. 最終サマリーを報告
+5. 最終サマリーを報告
    - 「対象 N 件 / PASS x / FAIL y / 要承認 z / エラー e」の1行
    - FAIL や 要承認 がある idea のうち代表3件のタイトルを併記
 
