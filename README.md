@@ -80,7 +80,7 @@ claude.ai/code →  **Environments** → **New environment**
 | Name | `instagram-kuchikomi-qa` |
 | Repository | `AreslotLLC/instagram-kuchikomi-power` |
 | Branch | `claude/analyze-automation-flow-hpP1y` (動作確認後 main にマージ) |
-| Setup script | `bash bin/setup.sh` |
+| Setup script | `pip install -r requirements.txt && mkdir -p /tmp/qa_images` |
 | Network access | `Custom` |
 
 **Allowed domains** に1行ずつ:

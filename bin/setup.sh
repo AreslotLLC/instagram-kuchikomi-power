@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Cloud Routines Environment の Setup script として登録する想定。
-# Environment 起動時に1回だけ実行され、Routine 本体は素早く立ち上がる。
+# ローカル試運転用のセットアップスクリプト。
+# Cloud Routines の Setup script フィールドには、本ファイルではなく
+# README の Step 1 にある1行コマンドを直接貼ってください。
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
