@@ -30,6 +30,17 @@ def _download_image(url: str, dst: Path) -> Path:
     return dst
 
 
+SLIDE_TARGET_STATUS = "投稿待ち"
+SLIDE_SKIP_QA_STATUS = "PASS"
+
+
+def _slide_is_qa_target(sfields: dict[str, Any]) -> bool:
+    """status=='投稿待ち' かつ slide_qa_status!='PASS' のスライドのみ QA 対象。"""
+    status = sfields.get("status", "")
+    qa_status = sfields.get("slide_qa_status", "")
+    return status == SLIDE_TARGET_STATUS and qa_status != SLIDE_SKIP_QA_STATUS
+
+
 def build_pending_payload(
     *,
     limit: int | None,
@@ -46,10 +57,15 @@ def build_pending_payload(
         idea_id = idea["id"]
         fields = idea["fields"]
         slides_records = air.fetch_slides_for_idea(idea_id)
+        total_slides = len(slides_records)
         slides: list[dict[str, Any]] = []
+        skipped_slides = 0
         for s in slides_records:
             sid = s["id"]
             sfields = s["fields"]
+            if not _slide_is_qa_target(sfields):
+                skipped_slides += 1
+                continue
             url = sfields.get("generated_image_url", "")
             local_path: str | None = None
             if url:
@@ -67,11 +83,17 @@ def build_pending_payload(
                     "image_description": sfields.get("image_description", ""),
                     "generated_image_url": url,
                     "local_image_path": local_path,
+                    "status": sfields.get("status", ""),
+                    "slide_qa_status": sfields.get("slide_qa_status", ""),
                 }
             )
-        print(f"[fetch] {idx}/{len(ideas)} {idea_id} slides={len(slides)}", file=sys.stderr)
+        print(
+            f"[fetch] {idx}/{len(ideas)} {idea_id} "
+            f"slides={len(slides)}/{total_slides} skipped={skipped_slides}",
+            file=sys.stderr,
+        )
         if not slides:
-            print(f"[fetch] skip {idea_id} (slides=0)", file=sys.stderr)
+            print(f"[fetch] skip {idea_id} (QA対象スライド0件)", file=sys.stderr)
             continue
         payload["ideas"].append(
             {
