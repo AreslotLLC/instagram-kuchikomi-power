@@ -69,6 +69,10 @@ def build_pending_payload(
                     "local_image_path": local_path,
                 }
             )
+        print(f"[fetch] {idx}/{len(ideas)} {idea_id} slides={len(slides)}", file=sys.stderr)
+        if not slides:
+            print(f"[fetch] skip {idea_id} (slides=0)", file=sys.stderr)
+            continue
         payload["ideas"].append(
             {
                 "idea_id": idea_id,
@@ -80,7 +84,6 @@ def build_pending_payload(
                 "slides": slides,
             }
         )
-        print(f"[fetch] {idx}/{len(ideas)} {idea_id} slides={len(slides)}", file=sys.stderr)
     return payload
 
 
