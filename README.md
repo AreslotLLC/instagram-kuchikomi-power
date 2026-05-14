@@ -14,11 +14,13 @@ PDF原則4「オーケストレーターはあなた(Claudeセッション本体
     instagram-image-qa.md    # サブエージェント定義 (PDF標準フォーマット)
   routines/
     qa-batch.md              # Routine 起動プロンプトのテンプレート
+  settings.json              # SessionStart hook: クラウドセッション起動時に pip install を自動実行
 scripts/
   fetch_pending.py           # Airtable → /tmp/qa_pending.json + /tmp/qa_images/*.png
   apply_qa.py                # /tmp/qa_results.json → Airtable 更新 + Discord 通知
   airtable_client.py         # Airtable I/O ラッパー
   discord_notifier.py        # Discord Webhook 通知
+  install_pkgs.sh            # SessionStart hook から呼ばれる依存インストーラ
 ```
 
 本リポジトリは時刻表記をすべて **日本時間(JST, UTC+09:00)** で統一しています。
@@ -80,15 +82,19 @@ claude.ai/code →  **Environments** → **New environment**
 | Name | `instagram-kuchikomi-qa` |
 | Repository | `AreslotLLC/instagram-kuchikomi-power` |
 | Branch | `claude/analyze-automation-flow-hpP1y` (動作確認後 main にマージ) |
-| Setup script | `pip install -r requirements.txt && mkdir -p /tmp/qa_images` |
-| Network access | `Custom` |
+| Setup script | **空のままにする**(依存インストールは SessionStart hook が担当) |
+| Network access | `Trusted`(デフォルト)のまま |
 
-**Allowed domains** に1行ずつ:
+**Allowed domains** に1行ずつ追加(Trusted の既定許可リストに追加で乗ります):
 ```
 api.airtable.com
 *.supabase.co
 discord.com
 ```
+
+> ⚠️ Network access を **Custom** にすると PyPI/npm 等のデフォルト許可ドメインが外れて依存インストールが失敗します。**必ず `Trusted` のまま**にしてください。
+>
+> 依存インストールは `.claude/settings.json` の SessionStart hook(`scripts/install_pkgs.sh`)が、Claude Code 起動直後にリポジトリの `requirements.txt` を読んで自動実行します。Setup script に何も書かないのは意図通りです。
 
 ### Step 2. Environment Variables を登録
 
