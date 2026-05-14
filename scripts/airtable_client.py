@@ -35,7 +35,9 @@ class KuchikomiAirtable:
         return records
 
     def fetch_slides_for_idea(self, idea_record_id: str) -> list[dict[str, Any]]:
-        formula = f"FIND('{idea_record_id}', ARRAYJOIN({{instagram_content}}))"
+        # instagram_content はリンクフィールドのため ARRAYJOIN が表示名を返してIDと一致しない。
+        # idea_record_id_lookup（レコードIDを保持するLookupフィールド）を使う。
+        formula = f"FIND('{idea_record_id}', ARRAYJOIN({{idea_record_id_lookup}}))"
         records = self._slides.all(formula=formula, sort=["slide_number"])
         return records
 
