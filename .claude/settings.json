@@ -1,4 +1,13 @@
 {
+  "sandbox": {
+    "network": {
+      "allowedDomains": [
+        "api.airtable.com",
+        "v5.airtableusercontent.com",
+        "discord.com"
+      ]
+    }
+  },
   "hooks": {
     "SessionStart": [
       {
