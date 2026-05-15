@@ -31,14 +31,13 @@ def _download_image(url: str, dst: Path) -> Path:
 
 
 SLIDE_TARGET_STATUS = "投稿待ち"
-SLIDE_SKIP_QA_STATUS = "PASS"
 
 
 def _slide_is_qa_target(sfields: dict[str, Any]) -> bool:
-    """status=='投稿待ち' かつ slide_qa_status!='PASS' のスライドのみ QA 対象。"""
-    status = sfields.get("status", "")
-    qa_status = sfields.get("slide_qa_status", "")
-    return status == SLIDE_TARGET_STATUS and qa_status != SLIDE_SKIP_QA_STATUS
+    """status=='投稿待ち' のスライドを QA 対象とする。
+    slide_qa_status は除外条件にしない — idea レベルが未PASS の場合、
+    スライドが個別にPASS済みでも再集計が必要なため。"""
+    return sfields.get("status", "") == SLIDE_TARGET_STATUS
 
 
 def build_pending_payload(
