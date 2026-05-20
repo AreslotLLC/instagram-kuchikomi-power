@@ -39,9 +39,6 @@ from scripts.airtable_client import KuchikomiAirtable  # noqa: E402
 from scripts.discord_notifier import DiscordNotifier  # noqa: E402
 
 
-def _airtable_url(base_id: str, table_id: str, record_id: str) -> str:
-    return f"https://airtable.com/{base_id}/{table_id}/{record_id}"
-
 
 def _resolve_qa_status(declared: str, score: int, threshold: int) -> str:
     if declared in {"PASS", "FAIL", "要承認"}:
@@ -100,14 +97,6 @@ def apply_results(input_path: Path) -> int:
                 )
 
             counts[qa_status] = counts.get(qa_status, 0) + 1
-            discord.notify_qa_result(
-                idea_title=title,
-                idea_record_id=idea_id,
-                qa_status=qa_status,
-                qa_score=qa_score,
-                qa_findings=qa_findings,
-                airtable_url=_airtable_url(air.base_id, air.ideas_table_id, idea_id),
-            )
             print(
                 f"[apply] {idx}/{len(results)} {idea_id} -> {qa_status} score={qa_score}",
                 file=sys.stderr,
