@@ -27,7 +27,7 @@ class KuchikomiAirtable:
     def fetch_ideas_pending_qa(self, target_status: str, limit: int | None = None) -> list[dict[str, Any]]:
         formula = (
             f"AND({{status}}='{target_status}',"
-            f"OR({{qa_status}}='',{{qa_status}}='未検査'))"
+            f"OR({{qa_status}}='',{{qa_status}}='未検査',{{qa_status}}='FAIL'))"
         )
         records = self._ideas.all(formula=formula, sort=["投稿順", "投稿予定日"])
         if limit is not None:
