@@ -35,10 +35,10 @@ SLIDE_TARGET_STATUS = "投稿待ち"
 
 
 def _slide_is_qa_target(sfields: dict[str, Any]) -> bool:
-    """status=='投稿待ち' のスライドを QA 対象とする。
-    slide_qa_status は除外条件にしない — idea レベルが未PASS の場合、
-    スライドが個別にPASS済みでも再集計が必要なため。"""
-    return sfields.get("status", "") == SLIDE_TARGET_STATUS
+    if sfields.get("status", "") != SLIDE_TARGET_STATUS:
+        return False
+    slide_qa_status = sfields.get("slide_qa_status", "")
+    return slide_qa_status in ("", "未検査")
 
 
 def _parse_dt(s: str) -> datetime:
