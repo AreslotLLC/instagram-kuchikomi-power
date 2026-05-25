@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -34,10 +35,47 @@ SLIDE_TARGET_STATUS = "投稿待ち"
 
 
 def _slide_is_qa_target(sfields: dict[str, Any]) -> bool:
-    """status=='投稿待ち' のスライドを QA 対象とする。
-    slide_qa_status は除外条件にしない — idea レベルが未PASS の場合、
-    スライドが個別にPASS済みでも再集計が必要なため。"""
-    return sfields.get("status", "") == SLIDE_TARGET_STATUS
+    if sfields.get("status", "") != SLIDE_TARGET_STATUS:
+        return False
+    slide_qa_status = sfields.get("slide_qa_status", "")
+    return slide_qa_status in ("", "未検査")
+
+
+def _parse_dt(s: str) -> datetime:
+    """ISO 8601 文字列を timezone-aware datetime に変換する。Z suffix も許容。"""
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    return datetime.fromisoformat(s)
+
+
+def _idea_has_regenerated_slides(
+    idea_fields: dict[str, Any], slides_records: list[dict[str, Any]]
+) -> bool:
+    """FAIL ideaについて、最後のQA検査より後に再生成されたスライドが1枚でもあるか判定する。
+    qa_status が FAIL 以外の idea は常に True を返す。
+    qa_checked_at が未設定（初回）の場合も True を返す。"""
+    if idea_fields.get("qa_status") != "FAIL":
+        return True
+
+    qa_checked_at_str = idea_fields.get("qa_checked_at")
+    if not qa_checked_at_str:
+        return True  # QA未実施扱い
+
+    try:
+        qa_checked_dt = _parse_dt(qa_checked_at_str)
+    except (ValueError, TypeError):
+        return True  # パース失敗時は安全側（対象に含める）
+
+    for s in slides_records:
+        generated_at_str = s["fields"].get("generated_at")
+        if generated_at_str:
+            try:
+                if _parse_dt(generated_at_str) > qa_checked_dt:
+                    return True
+            except (ValueError, TypeError):
+                pass
+
+    return False
 
 
 def build_pending_payload(
@@ -56,6 +94,14 @@ def build_pending_payload(
         idea_id = idea["id"]
         fields = idea["fields"]
         slides_records = air.fetch_slides_for_idea(idea_id)
+
+        if not _idea_has_regenerated_slides(fields, slides_records):
+            print(
+                f"[fetch] skip {idea_id} (FAIL後に再生成なし)",
+                file=sys.stderr,
+            )
+            continue
+
         total_slides = len(slides_records)
         slides: list[dict[str, Any]] = []
         skipped_slides = 0
