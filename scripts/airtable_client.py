@@ -47,16 +47,16 @@ class KuchikomiAirtable:
         qa_findings: str,
         qa_attempt_no: int,
     ) -> None:
-        self._ideas.update(
-            idea_record_id,
-            {
-                "qa_status": qa_status,
-                "qa_score": qa_score,
-                "qa_findings": qa_findings,
-                "qa_checked_at": _now_jst_iso(),
-                "qa_attempt_no": qa_attempt_no,
-            },
-        )
+        fields: dict[str, Any] = {
+            "qa_status": qa_status,
+            "qa_score": qa_score,
+            "qa_findings": qa_findings,
+            "qa_checked_at": _now_jst_iso(),
+            "qa_attempt_no": qa_attempt_no,
+        }
+        if qa_status in {"FAIL", "要承認"}:
+            fields["status"] = "再生成待ち"
+        self._ideas.update(idea_record_id, fields)
 
     def mark_idea_qa_in_progress(self, idea_record_id: str) -> None:
         self._ideas.update(idea_record_id, {"qa_status": "検査中"})
@@ -69,12 +69,12 @@ class KuchikomiAirtable:
         slide_qa_score: int,
         slide_qa_findings: str,
     ) -> None:
-        self._slides.update(
-            slide_record_id,
-            {
-                "slide_qa_status": slide_qa_status,
-                "slide_qa_score": slide_qa_score,
-                "slide_qa_findings": slide_qa_findings,
-                "slide_qa_checked_at": _now_jst_iso(),
-            },
-        )
+        fields: dict[str, Any] = {
+            "slide_qa_status": slide_qa_status,
+            "slide_qa_score": slide_qa_score,
+            "slide_qa_findings": slide_qa_findings,
+            "slide_qa_checked_at": _now_jst_iso(),
+        }
+        if slide_qa_status == "FAIL":
+            fields["status"] = "再生成待ち"
+        self._slides.update(slide_record_id, fields)
