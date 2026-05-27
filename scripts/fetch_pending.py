@@ -106,6 +106,7 @@ def build_pending_payload(
         if fields.get("qa_status") == "FAIL":
             try:
                 air.clear_idea_qa_fields(idea_id)
+                fields["qa_attempt_no"] = 0  # メモリ上の値も同期してpayloadに反映
                 print(f"[fetch] {idea_id} FAIL→再生成検出: idea QAフィールドクリア", file=sys.stderr)
             except Exception as exc:  # noqa: BLE001
                 print(f"[fetch][warn] clear idea QA fields fail {idea_id}: {exc}", file=sys.stderr)

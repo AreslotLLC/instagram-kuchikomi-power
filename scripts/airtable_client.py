@@ -91,4 +91,5 @@ class KuchikomiAirtable:
             "qa_status": "",
             "qa_score": 0,
             "qa_findings": "",
+            "qa_attempt_no": 0,
         })
