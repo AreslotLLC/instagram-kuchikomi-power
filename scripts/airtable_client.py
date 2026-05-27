@@ -78,7 +78,3 @@ class KuchikomiAirtable:
                 "slide_qa_checked_at": _now_jst_iso(),
             },
         )
-
-    def reset_slide_qa_status(self, slide_record_id: str) -> None:
-        """再生成されたスライドの QA ステータスをクリアする。"""
-        self._slides.update(slide_record_id, {"slide_qa_status": ""})
