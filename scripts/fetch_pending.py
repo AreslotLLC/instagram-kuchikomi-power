@@ -147,7 +147,17 @@ def build_pending_payload(
             file=sys.stderr,
         )
         if not slides:
-            print(f"[fetch] skip {idea_id} (QA対象スライド0件)", file=sys.stderr)
+            all_pass = bool(slides_records) and all(
+                s["fields"].get("slide_qa_status") == "PASS" for s in slides_records
+            )
+            if all_pass:
+                try:
+                    air.update_idea_status(idea_id, "投稿待ち")
+                    print(f"[fetch] {idea_id} 全スライドPASS: idea status=投稿待ち に昇格", file=sys.stderr)
+                except Exception as exc:  # noqa: BLE001
+                    print(f"[fetch][warn] update idea status fail {idea_id}: {exc}", file=sys.stderr)
+            else:
+                print(f"[fetch] skip {idea_id} (QA対象スライド0件)", file=sys.stderr)
             continue
         payload["ideas"].append(
             {
