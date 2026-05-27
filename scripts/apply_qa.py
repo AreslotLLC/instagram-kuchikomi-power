@@ -104,8 +104,8 @@ def apply_results(input_path: Path) -> int:
                 if all_slides and all(
                     s["fields"].get("slide_qa_status") == "PASS" for s in all_slides
                 ):
-                    air.update_idea_status(idea_id, "PASS")
-                    print(f"[apply] {idea_id} 全スライドPASS -> idea status=PASS", file=sys.stderr)
+                    air.update_idea_status(idea_id, "投稿待ち")
+                    print(f"[apply] {idea_id} 全スライドPASS -> idea status=投稿待ち", file=sys.stderr)
             except Exception:  # noqa: BLE001
                 traceback.print_exc()
 
