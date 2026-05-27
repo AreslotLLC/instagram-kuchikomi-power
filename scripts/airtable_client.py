@@ -78,3 +78,9 @@ class KuchikomiAirtable:
                 "slide_qa_checked_at": _now_jst_iso(),
             },
         )
+
+    def update_slide_status(self, slide_record_id: str, status: str) -> None:
+        self._slides.update(slide_record_id, {"status": status})
+
+    def update_idea_status(self, idea_record_id: str, status: str) -> None:
+        self._ideas.update(idea_record_id, {"status": status})

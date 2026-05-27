@@ -89,12 +89,25 @@ def apply_results(input_path: Path) -> int:
                 sid = s.get("slide_id")
                 if not sid:
                     continue
+                slide_qa_status = s.get("slide_qa_status", "未検査")
                 air.update_slide_qa(
                     sid,
-                    slide_qa_status=s.get("slide_qa_status", "未検査"),
+                    slide_qa_status=slide_qa_status,
                     slide_qa_score=int(s.get("slide_qa_score", 0)),
                     slide_qa_findings=s.get("slide_qa_findings", ""),
                 )
+                if slide_qa_status == "PASS":
+                    air.update_slide_status(sid, "投稿待ち")
+
+            try:
+                all_slides = air.fetch_slides_for_idea(idea_id)
+                if all_slides and all(
+                    s["fields"].get("slide_qa_status") == "PASS" for s in all_slides
+                ):
+                    air.update_idea_status(idea_id, "PASS")
+                    print(f"[apply] {idea_id} 全スライドPASS -> idea status=PASS", file=sys.stderr)
+            except Exception:  # noqa: BLE001
+                traceback.print_exc()
 
             counts[qa_status] = counts.get(qa_status, 0) + 1
             print(
