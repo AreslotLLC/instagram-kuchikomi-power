@@ -103,6 +103,13 @@ def build_pending_payload(
             )
             continue
 
+        if fields.get("qa_status") == "FAIL":
+            try:
+                air.clear_idea_qa_fields(idea_id)
+                print(f"[fetch] {idea_id} FAIL→再生成検出: idea QAフィールドクリア", file=sys.stderr)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[fetch][warn] clear idea QA fields fail {idea_id}: {exc}", file=sys.stderr)
+
         total_slides = len(slides_records)
         slides: list[dict[str, Any]] = []
         skipped_slides = 0

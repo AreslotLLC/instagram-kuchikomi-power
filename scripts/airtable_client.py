@@ -84,3 +84,11 @@ class KuchikomiAirtable:
 
     def update_idea_status(self, idea_record_id: str, status: str) -> None:
         self._ideas.update(idea_record_id, {"status": status})
+
+    def clear_idea_qa_fields(self, idea_record_id: str) -> None:
+        """FAIL idea が再生成されたとき、QAフィールドをリセットする。"""
+        self._ideas.update(idea_record_id, {
+            "qa_status": "",
+            "qa_score": 0,
+            "qa_findings": "",
+        })
