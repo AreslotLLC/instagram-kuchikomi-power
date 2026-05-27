@@ -38,7 +38,23 @@ def _slide_is_qa_target(sfields: dict[str, Any]) -> bool:
     if sfields.get("status", "") != SLIDE_TARGET_STATUS:
         return False
     slide_qa_status = sfields.get("slide_qa_status", "")
-    return slide_qa_status in ("", "未検査")
+    return slide_qa_status in ("", "未検査", "FAIL")
+
+
+def _slide_was_regenerated_after_qa(sfields: dict[str, Any]) -> bool:
+    """FAIL スライドが最後の QA 検査より後に再生成されたか判定する。"""
+    if sfields.get("slide_qa_status") != "FAIL":
+        return False
+    slide_qa_checked_at_str = sfields.get("slide_qa_checked_at")
+    if not slide_qa_checked_at_str:
+        return False
+    generated_at_str = sfields.get("generated_at")
+    if not generated_at_str:
+        return False
+    try:
+        return _parse_dt(generated_at_str) > _parse_dt(slide_qa_checked_at_str)
+    except (ValueError, TypeError):
+        return False
 
 
 def _parse_dt(s: str) -> datetime:
@@ -111,6 +127,11 @@ def build_pending_payload(
             if not _slide_is_qa_target(sfields):
                 skipped_slides += 1
                 continue
+            if _slide_was_regenerated_after_qa(sfields):
+                try:
+                    air.reset_slide_qa_status(sid)
+                except Exception as exc:  # noqa: BLE001
+                    print(f"[fetch][warn] reset slide_qa_status fail {sid}: {exc}", file=sys.stderr)
             url = sfields.get("generated_image_url", "")
             local_path: str | None = None
             if url:
