@@ -69,12 +69,20 @@ class KuchikomiAirtable:
         slide_qa_score: int,
         slide_qa_findings: str,
     ) -> None:
-        self._slides.update(
-            slide_record_id,
-            {
-                "slide_qa_status": slide_qa_status,
-                "slide_qa_score": slide_qa_score,
-                "slide_qa_findings": slide_qa_findings,
-                "slide_qa_checked_at": _now_jst_iso(),
-            },
-        )
+        if slide_qa_status == "PASS":
+            new_status = "投稿待ち"
+        elif slide_qa_status == "FAIL":
+            new_status = "再生成待ち"
+        else:
+            new_status = None
+
+        fields: dict = {
+            "slide_qa_status": slide_qa_status,
+            "slide_qa_score": slide_qa_score,
+            "slide_qa_findings": slide_qa_findings,
+            "slide_qa_checked_at": _now_jst_iso(),
+        }
+        if new_status is not None:
+            fields["status"] = new_status
+
+        self._slides.update(slide_record_id, fields)
