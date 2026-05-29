@@ -31,7 +31,7 @@ def _download_image(url: str, dst: Path) -> Path:
     return dst
 
 
-SLIDE_TARGET_STATUS = "投稿待ち"
+SLIDE_TARGET_STATUS = "品質チェック待ち"
 
 
 def _slide_is_qa_target(sfields: dict[str, Any]) -> bool:
