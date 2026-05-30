@@ -94,11 +94,14 @@ def apply_results(input_path: Path) -> int:
                 # サブエージェントが「要承認」を返した場合は FAIL に倒す。
                 if raw_slide_status not in {"PASS", "FAIL", "未検査"}:
                     raw_slide_status = "FAIL"
+                # PASS → 投稿待ち、FAIL → 再生成待ち
+                new_status = "投稿待ち" if raw_slide_status == "PASS" else "再生成待ち"
                 air.update_slide_qa(
                     sid,
                     slide_qa_status=raw_slide_status,
                     slide_qa_score=int(s.get("slide_qa_score", 0)),
                     slide_qa_findings=s.get("slide_qa_findings", ""),
+                    status=new_status,
                 )
 
             counts[qa_status] = counts.get(qa_status, 0) + 1

@@ -68,13 +68,14 @@ class KuchikomiAirtable:
         slide_qa_status: str,
         slide_qa_score: int,
         slide_qa_findings: str,
+        status: str | None = None,
     ) -> None:
-        self._slides.update(
-            slide_record_id,
-            {
-                "slide_qa_status": slide_qa_status,
-                "slide_qa_score": slide_qa_score,
-                "slide_qa_findings": slide_qa_findings,
-                "slide_qa_checked_at": _now_jst_iso(),
-            },
-        )
+        fields: dict[str, Any] = {
+            "slide_qa_status": slide_qa_status,
+            "slide_qa_score": slide_qa_score,
+            "slide_qa_findings": slide_qa_findings,
+            "slide_qa_checked_at": _now_jst_iso(),
+        }
+        if status is not None:
+            fields["status"] = status
+        self._slides.update(slide_record_id, fields)
