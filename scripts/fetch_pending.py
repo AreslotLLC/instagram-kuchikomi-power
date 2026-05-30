@@ -31,11 +31,11 @@ def _download_image(url: str, dst: Path) -> Path:
     return dst
 
 
-SLIDE_TARGET_STATUS = "投稿待ち"
+SLIDE_TARGET_STATUSES = {"投稿待ち", "品質チェック待ち"}
 
 
 def _slide_is_qa_target(sfields: dict[str, Any]) -> bool:
-    if sfields.get("status", "") != SLIDE_TARGET_STATUS:
+    if sfields.get("status", "") not in SLIDE_TARGET_STATUSES:
         return False
     slide_qa_status = sfields.get("slide_qa_status", "")
     return slide_qa_status in ("", "未検査")

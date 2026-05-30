@@ -25,7 +25,7 @@ class KuchikomiAirtable:
         self._slides = self._api.table(self.base_id, self.slides_table_id)
 
     def fetch_ideas_pending_qa(self, target_status: str, limit: int | None = None) -> list[dict[str, Any]]:
-        formula = f"{{status}}='{target_status}'"
+        formula = f"OR({{status}}='{target_status}', {{status}}='画像生成中')"
         records = self._ideas.all(formula=formula, sort=["投稿順", "投稿予定日"])
         if limit is not None:
             records = records[:limit]

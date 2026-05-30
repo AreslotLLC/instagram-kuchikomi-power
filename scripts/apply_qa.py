@@ -89,9 +89,14 @@ def apply_results(input_path: Path) -> int:
                 sid = s.get("slide_id")
                 if not sid:
                     continue
+                raw_slide_status = s.get("slide_qa_status", "未検査")
+                # slide_qa_status は PASS / FAIL / 未検査 のみ有効。
+                # サブエージェントが「要承認」を返した場合は FAIL に倒す。
+                if raw_slide_status not in {"PASS", "FAIL", "未検査"}:
+                    raw_slide_status = "FAIL"
                 air.update_slide_qa(
                     sid,
-                    slide_qa_status=s.get("slide_qa_status", "未検査"),
+                    slide_qa_status=raw_slide_status,
                     slide_qa_score=int(s.get("slide_qa_score", 0)),
                     slide_qa_findings=s.get("slide_qa_findings", ""),
                 )
