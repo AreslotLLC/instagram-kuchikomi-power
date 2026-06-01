@@ -31,7 +31,7 @@ def _download_image(url: str, dst: Path) -> Path:
     return dst
 
 
-SLIDE_TARGET_STATUS = "投稿待ち"
+SLIDE_TARGET_STATUS = "品質チェック待ち"
 
 
 def _slide_is_qa_target(sfields: dict[str, Any]) -> bool:
@@ -160,7 +160,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=Path("/tmp/qa_pending.json"))
     parser.add_argument("--image-dir", type=Path, default=Path("/tmp/qa_images"))
     args = parser.parse_args()
-    target_status = os.environ.get("QA_TARGET_STATUS", "投稿待ち")
+    target_status = os.environ.get("QA_TARGET_STATUS", "画像生成中")
 
     payload = build_pending_payload(
         limit=args.limit,
