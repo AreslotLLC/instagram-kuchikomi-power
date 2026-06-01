@@ -80,3 +80,15 @@ class KuchikomiAirtable:
                 "status": new_status,
             },
         )
+
+    def promote_idea_if_all_slides_pass(self, idea_record_id: str) -> bool:
+        """全スライドが PASS なら idea の status を '投稿待ち' に昇格する。"""
+        slides = self.fetch_slides_for_idea(idea_record_id)
+        if not slides:
+            return False
+        all_pass = all(
+            s["fields"].get("slide_qa_status") == "PASS" for s in slides
+        )
+        if all_pass:
+            self._ideas.update(idea_record_id, {"status": "投稿待ち"})
+        return all_pass
