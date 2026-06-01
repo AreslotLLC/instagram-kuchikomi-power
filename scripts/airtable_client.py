@@ -69,6 +69,7 @@ class KuchikomiAirtable:
         slide_qa_score: int,
         slide_qa_findings: str,
     ) -> None:
+        new_status = "投稿待ち" if slide_qa_status == "PASS" else "再生成待ち"
         self._slides.update(
             slide_record_id,
             {
@@ -76,5 +77,6 @@ class KuchikomiAirtable:
                 "slide_qa_score": slide_qa_score,
                 "slide_qa_findings": slide_qa_findings,
                 "slide_qa_checked_at": _now_jst_iso(),
+                "status": new_status,
             },
         )
