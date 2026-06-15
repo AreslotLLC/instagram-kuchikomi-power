@@ -81,6 +81,18 @@ class KuchikomiAirtable:
             },
         )
 
+    def update_slide_description(
+        self,
+        slide_record_id: str,
+        *,
+        slide_title: str,
+        image_description: str,
+    ) -> None:
+        updates: dict[str, Any] = {"image_description": image_description}
+        if slide_title.strip():
+            updates["slide_title"] = slide_title
+        self._slides.update(slide_record_id, updates)
+
     def promote_idea_if_all_slides_pass(self, idea_record_id: str) -> bool:
         """全スライドが PASS なら idea の status を '投稿待ち' に昇格する。"""
         slides = self.fetch_slides_for_idea(idea_record_id)
