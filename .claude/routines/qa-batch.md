@@ -15,9 +15,27 @@
 
 あなたはこのリポジトリの「Instagram カルーセル QA 品質ゲート」のオーケストレーターです。
 Python は I/O 専用、判定は `instagram-image-qa` サブエージェントに完全委譲します。
-途中で迷ったら勝手に判断せず、`qa_status='要承認'` に倒して人間の判断に回してください。
+途中で迷ったら動手に判断せず、`qa_status='要承認'` に倒して人間の判断に回してください。
 
 ### 手順
+
+0. image_description の生成・挿入（画像生成パイプラインへの投入）
+
+   - `python -m scripts.fetch_gen_pending --limit 20 --output /tmp/gen_pending.json` を実行
+   - 失敗したら理由を報告して STOP(再試行しない)
+   - `/tmp/gen_pending.json` を Read で読み込み、`ideas` 配列の件数を報告
+   - 0件ならこのステップをスキップしてステップ1へ進む
+
+   **生成実行**（並列 OK）
+   - 各 idea に対して **`image-description-gen` サブエージェント**を spawn する
+     - サブエージェントへの prompt: 「次の idea のスライド image_description を生成してください。生成後は `<<<GEN_JSON>>>...<<<END>>>` のセンチネル付き JSON のみを返してください。」のあとに idea 本体の JSON を貼り付ける
+   - サブエージェントが返した最終応答テキストから `<<<GEN_JSON>>>` と `<<<END>>>` の間を抽出して `gen_results` 配列に push
+   - JSON が取れない場合は、その idea をスキップして次へ（QA はブロックしない）
+
+   **結果書き出し & Airtable 反映**
+   - 集めた `gen_results` を `{"results": [...]}` の形にして Write で `/tmp/gen_results.json` に保存
+   - `python -m scripts.apply_image_description --input /tmp/gen_results.json` を Bash で実行
+   - 標準エラー出力の最後にある `[apply-desc][done]` 行をそのまま転記
 
 1. 投稿待ち画像を取得
    - `python -m scripts.fetch_pending --limit 40 --output /tmp/qa_pending.json --image-dir /tmp/qa_images` を実行
