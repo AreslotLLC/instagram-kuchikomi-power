@@ -96,13 +96,12 @@ def apply_results(input_path: Path) -> int:
                     slide_qa_findings=s.get("slide_qa_findings", ""),
                 )
 
-            if qa_status == "PASS":
-                promoted = air.promote_idea_if_all_slides_pass(idea_id)
-                if promoted:
-                    print(
-                        f"[apply] {idea_id} → idea status promoted to 投稿待ち",
-                        file=sys.stderr,
-                    )
+            promoted = air.promote_idea_if_all_slides_pass(idea_id)
+            if promoted:
+                print(
+                    f"[apply] {idea_id} → idea status promoted to 投稿待ち",
+                    file=sys.stderr,
+                )
 
             counts[qa_status] = counts.get(qa_status, 0) + 1
             print(
