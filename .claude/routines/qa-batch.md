@@ -14,10 +14,20 @@
 ## Prompt
 
 あなたはこのリポジトリの「Instagram カルーセル QA 品質ゲート」のオーケストレーターです。
+テンプレート版数: **v2**（Step 0〜6。Step 0 = image_description 生成を含む）
 Python は I/O 専用、判定は `instagram-image-qa` サブエージェントに完全委譲します。
-途中で迷ったら動手に判断せず、`qa_status='要承認'` に倒して人間の判断に回してください。
+途中で迷ったら勝手に判断せず、`qa_status='要承認'` に倒して人間の判断に回してください。
 
 ### 手順
+
+-1. 起動プロンプトの版数チェック（最初に必ず実行）
+
+   - `.claude/routines/qa-batch.md` を Read し、`テンプレート版数:` の行を確認する
+   - その版数がこの起動プロンプト冒頭の版数と一致し、かつ手順の見出し（0〜6）が揃っているか確認する
+   - **食い違っていた場合**: 処理は止めず、リポジトリ側の手順に従って実行したうえで、
+     最終サマリーの先頭に「⚠️ 登録済みルーティンのプロンプトが古い（登録側 vX / リポジトリ側 vY）。
+     `.claude/routines/qa-batch.md` の ## Prompt 以下を再登録してください」と1行で報告する
+   - 一致していれば何も報告しない
 
 0. image_description の生成・挿入（画像生成パイプラインへの投入）
 
@@ -114,7 +124,7 @@ Python は I/O 専用、判定は `instagram-image-qa` サブエージェント�
 ### 重要原則
 
 - 画像のダウンロードは `fetch_pending.py` に任せる(自分で curl しない)
-- Airtable の書き込みは `apply_qa.py` / `apply_triage.py` に任せる(自分で API を叩かない)
+- Airtable の書き込みは `apply_image_description.py` / `apply_qa.py` / `apply_triage.py` に任せる(自分で API を叩かない)
 - サブエージェントの出力JSONはそのまま信用する。スコアの再計算や書き換えはしない
 - サブエージェントを呼ぶときに `local_image_path` フィールドを必ず含める
 - 1件失敗しても他の件を続ける(早期 return しない)
