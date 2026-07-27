@@ -93,6 +93,29 @@ class KuchikomiAirtable:
             updates["slide_title"] = slide_title
         self._slides.update(slide_record_id, updates)
 
+    def create_idea(self, fields: dict[str, Any]) -> str:
+        """企画レコードを1件作成し、record ID を返す。"""
+        rec = self._ideas.create(fields)
+        return rec["id"]
+
+    def create_slides(self, idea_record_id: str, slides: list[dict[str, Any]]) -> list[str]:
+        """企画に紐づくスライドをまとめて作成し、record ID のリストを返す。
+
+        image_description / slide_title は空のままにして、後段の
+        image-description-gen ルーティンに委ねる。
+        """
+        payload = [
+            {
+                "label": s["label"],
+                "slide_number": s["slide_number"],
+                "instagram_content": [idea_record_id],
+                "status": s.get("status", "生成待ち"),
+            }
+            for s in slides
+        ]
+        created = self._slides.batch_create(payload)
+        return [r["id"] for r in created]
+
     def promote_idea_if_all_slides_pass(self, idea_record_id: str) -> bool:
         """全スライドが PASS なら idea の status を '投稿待ち' に昇格する。"""
         slides = self.fetch_slides_for_idea(idea_record_id)
